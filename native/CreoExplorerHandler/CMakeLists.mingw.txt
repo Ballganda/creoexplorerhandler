@@ -1,0 +1,47 @@
+cmake_minimum_required(VERSION 3.16)
+project(CreoExplorerHandler LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_SYSTEM_NAME Windows)
+
+add_library(CreoExplorerHandler SHARED
+  src/ClassFactory.cpp
+  src/CreoPropertyStore.cpp
+  src/MappingConfig.cpp
+  src/dllmain.cpp
+  ../creo_param_extractor/src/creo_param_extractor.cpp
+  src/CreoExplorerHandler.def
+)
+
+target_include_directories(CreoExplorerHandler PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../creo_param_extractor/include
+)
+
+target_compile_definitions(CreoExplorerHandler PRIVATE
+  WIN32_LEAN_AND_MEAN
+  UNICODE
+  _UNICODE
+  _WINDLL
+  NDEBUG
+)
+
+target_compile_options(CreoExplorerHandler PRIVATE -O2 -Wall)
+
+target_link_libraries(CreoExplorerHandler PRIVATE
+  propsys
+  shlwapi
+  ole32
+  shell32
+  uuid
+  oleaut32
+)
+
+set_target_properties(CreoExplorerHandler PROPERTIES
+  PREFIX ""
+  OUTPUT_NAME "CreoExplorerHandler"
+  SUFFIX ".dll"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin/Release"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin/Release"
+)

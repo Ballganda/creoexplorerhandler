@@ -1,0 +1,59 @@
+// Creo Explorer Property Handler — column mapping
+//
+// Place this file next to CreoExplorerHandler.dll (same folder).
+// Edit mappings, then re-run Register.ps1 so Explorer column lists update.
+// Explorer reads values from the DLL on each file open (no re-register needed
+// just to change which Creo parameter feeds an already-registered column).
+//
+// Format (one mapping per line):
+//   "Windows explorer detail header name" "CREO_PARAMETER_NAME"
+//
+// Lines that start with // are comments. Blank lines are ignored.
+//
+// Left side — either:
+//   • An Explorer Details header alias (Authors, Tags, Company, …), or
+//   • A Windows canonical name (System.Author, System.Company, …)
+//
+// Right side — exact Creo USER parameter name (Creo stores these UPPERCASE).
+// Only String-type Creo parameters are shown; Real/Number values are skipped.
+//
+// Supported header aliases (also accept System.* forms):
+//   Authors / Author          → System.Author
+//   Tags / Keywords           → System.Keywords
+//   Comments / Comment        → System.Comment
+//   Title                     → System.Title
+//   Subject                   → System.Subject
+//   Company                   → System.Company
+//   Category                  → System.Category
+//   Status / Content status   → System.ContentStatus
+//   Copyright                 → System.Copyright
+//   Last author               → System.Document.LastAuthor
+//   Revision / Revision number→ System.Document.RevisionNumber
+//   Version / Version number  → System.Document.Version
+//   Manager                   → System.Document.Manager
+//   Client ID                 → System.Document.ClientID
+//   Document ID               → System.Document.DocumentID
+//   Contributor               → System.Document.Contributor
+//   Language                  → System.Language
+//   Source                    → System.Source
+//   File description          → System.FileDescription
+//   Software used             → System.SoftwareUsed
+//   Application name          → System.ApplicationName
+//   Content type              → System.ContentType
+//
+// Any other System.* string property name is also accepted on the left side.
+// After adding a new System.* name, run Register.ps1 again, then enable the
+// column in Explorer (right-click column header → More…).
+//
+// Default mappings (same as the built-in fallback if this file is missing):
+
+"Authors" "AUTHORS"
+"Tags" "TAGS"
+"Comments" "COMMENTS"
+"Title" "TITLE"
+"Subject" "SUBJECT"
+
+// Examples — uncomment and set your Creo parameter names:
+// "Company" "COMPANY"
+// "System.Document.RevisionNumber" "REV"
+// "Category" "PRODUCT_LINE"
