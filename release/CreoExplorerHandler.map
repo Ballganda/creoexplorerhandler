@@ -17,9 +17,11 @@
 //
 // Default mappings:
 
-"System.Document.RevisionNumber" "SYS_REVISION"
+// Explorer Details column "Product version" (not Document.RevisionNumber).
+"System.Software.ProductVersion" "SYS_REVISION"
 "System.FileVersion" "SYS_FILEVERSION"
 "System.Document.Version" "SYS_FILEVERSION"
+"System.Document.RevisionNumber" "SYS_REVISION"
 "System.ContentStatus" "SYS_STATUS"
 "System.Author" "SYS_AUTHORS"
 "System.Contact.Initials" "SYS_APPROVED_BY_INITIALS"
@@ -38,7 +40,7 @@
 "System.Subject" "SYS_SUBJECT"
 
 // Corrections for common mistaken names (also handled as aliases in the DLL):
-//   System.ProductVersion  -> does not exist; use System.Document.RevisionNumber
+//   System.ProductVersion  -> System.Software.ProductVersion (Explorer column)
 //   System.Initials        -> System.Contact.Initials
 //   System.Subtitle        -> System.Media.SubTitle   (capital T in SubTitle)
 //   System.Department      -> System.Contact.Department

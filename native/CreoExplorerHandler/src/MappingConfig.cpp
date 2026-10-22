@@ -122,10 +122,12 @@ constexpr Alias kAliases[] = {
     {"System.ProgramName", "System.ApplicationName"},
     {"System.Classification", "System.SensitivityText"},
     {"System.Manufacturer", "System.Photo.CameraManufacturer"},
-    // System.ProductVersion does not exist; map to document revision label.
-    {"System.ProductVersion", "System.Document.RevisionNumber"},
-    {"Product version", "System.Document.RevisionNumber"},
-    {"Product Version", "System.Document.RevisionNumber"},
+    // Explorer Details column "Product version" is System.Software.ProductVersion
+    // (VERSIONINFO FMTID, PID 8) — not System.ProductVersion.
+    {"System.ProductVersion", "System.Software.ProductVersion"},
+    {"System.Software.ProductVersion", "System.Software.ProductVersion"},
+    {"Product version", "System.Software.ProductVersion"},
+    {"Product Version", "System.Software.ProductVersion"},
 };
 
 }  // namespace

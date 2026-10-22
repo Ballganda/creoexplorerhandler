@@ -3,6 +3,8 @@
 #include <propvarutil.h>
 #include <shlwapi.h>
 
+#include <cctype>
+#include <cstring>
 #include <string_view>
 #include <vector>
 
@@ -52,12 +54,79 @@ mapping::Config LoadMappingConfig() {
   return mapping::load_config_beside_module(WideToUtf8(module_path));
 }
 
+// Keys that some Windows builds omit from PSGetPropertyKeyFromName but that
+// Explorer still uses for Details columns (VERSIONINFO / Software group).
+bool HardcodedPropertyKey(const std::string& canonical, PROPERTYKEY* key) {
+  // Case-insensitive compare of ASCII canonical names.
+  auto eq = [](const std::string& a, const char* b) {
+    const std::size_t blen = std::strlen(b);
+    if (a.size() != blen) {
+      return false;
+    }
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      const auto ca =
+          static_cast<char>(std::tolower(static_cast<unsigned char>(a[i])));
+      const auto cb =
+          static_cast<char>(std::tolower(static_cast<unsigned char>(b[i])));
+      if (ca != cb) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // PSFMTID_VERSION {0CEF7D53-FA64-11D1-A203-0000F81FEDEE}
+  PROPERTYKEY pk = {};
+  pk.fmtid.Data1 = 0x0cef7d53;
+  pk.fmtid.Data2 = 0xfa64;
+  pk.fmtid.Data3 = 0x11d1;
+  pk.fmtid.Data4[0] = 0xa2;
+  pk.fmtid.Data4[1] = 0x03;
+  pk.fmtid.Data4[2] = 0x00;
+  pk.fmtid.Data4[3] = 0x00;
+  pk.fmtid.Data4[4] = 0xf8;
+  pk.fmtid.Data4[5] = 0x1f;
+  pk.fmtid.Data4[6] = 0xed;
+  pk.fmtid.Data4[7] = 0xee;
+
+  if (eq(canonical, "System.Software.ProductVersion") ||
+      eq(canonical, "System.ProductVersion")) {
+    // ExtendedProperty("System.Software.ProductVersion") / column "Product version"
+    pk.pid = 8;
+    *key = pk;
+    return true;
+  }
+  if (eq(canonical, "System.FileVersion")) {
+    pk.pid = 4;
+    *key = pk;
+    return true;
+  }
+  if (eq(canonical, "System.Software.ProductName")) {
+    pk.pid = 7;
+    *key = pk;
+    return true;
+  }
+  if (eq(canonical, "System.FileDescription")) {
+    pk.pid = 3;
+    *key = pk;
+    return true;
+  }
+  return false;
+}
+
 HRESULT ResolvePropertyKey(const std::string& canonical, PROPERTYKEY* key) {
   if (key == nullptr || canonical.empty()) {
     return E_INVALIDARG;
   }
   const std::wstring wide = Utf8ToWide(canonical);
-  return PSGetPropertyKeyFromName(wide.c_str(), key);
+  const HRESULT hr = PSGetPropertyKeyFromName(wide.c_str(), key);
+  if (SUCCEEDED(hr)) {
+    return hr;
+  }
+  if (HardcodedPropertyKey(canonical, key)) {
+    return S_OK;
+  }
+  return hr;
 }
 
 }  // namespace

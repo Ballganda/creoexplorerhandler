@@ -56,7 +56,9 @@ bogus line
   auto program = mapping::resolve_canonical_name("System.ProgramName");
   EXPECT_TRUE(program && *program == "System.ApplicationName");
   auto product = mapping::resolve_canonical_name("System.ProductVersion");
-  EXPECT_TRUE(product && *product == "System.Document.RevisionNumber");
+  EXPECT_TRUE(product && *product == "System.Software.ProductVersion");
+  auto product_col = mapping::resolve_canonical_name("Product version");
+  EXPECT_TRUE(product_col && *product_col == "System.Software.ProductVersion");
   auto bad = mapping::resolve_canonical_name("NotARealHeader");
   EXPECT_TRUE(!bad);
   EXPECT_TRUE(mapping::is_author_property("System.Author"));
