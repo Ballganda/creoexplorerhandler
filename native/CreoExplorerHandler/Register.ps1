@@ -1,4 +1,4 @@
-#Requires -RunAsAdministrator
+﻿#Requires -RunAsAdministrator
 param(
     [ValidateSet("Register", "Unregister")]
     [string]$Action = "Register",
@@ -25,9 +25,9 @@ if (-not (Test-IsAdmin)) {
     throw @"
 This script must run in an elevated PowerShell (Run as administrator).
 
-Developer PowerShell for Visual Studio is NOT elevated — open a separate Admin shell:
+Developer PowerShell for Visual Studio is NOT elevated - open a separate Admin shell:
 
-  Start menu → right-click Windows PowerShell or Terminal → Run as administrator
+  Start menu -> right-click Windows PowerShell or Terminal -> Run as administrator
 
 Then:
   cd `"$PSScriptRoot`"
@@ -76,7 +76,7 @@ $mapPath = Join-Path (Split-Path -Parent $DllPath) "CreoExplorerHandler.map"
 if (Test-Path -LiteralPath $mapPath) {
     Write-Host "Mapping:  $mapPath"
 } else {
-    Write-Host "Mapping:  (none next to DLL — built-in Authors/Tags/Comments/Title/Subject)"
+    Write-Host "Mapping:  (none next to DLL - built-in Authors/Tags/Comments/Title/Subject)"
     Write-Host "          Copy CreoExplorerHandler.map next to the DLL to customize columns."
 }
 
@@ -103,7 +103,7 @@ regsvr32 failed (exit code: $code).
 Common causes:
   1. Not running elevated (must be Administrator).
   2. Wrong regsvr32 (must be System32 for x64 DLL).
-  3. DLL failed to load (rebuild Release|x64, install VC++ redistributable if needed).
+  3. DLL failed to load (rebuild Release x64, install VC++ redistributable if needed).
   4. DllRegisterServer returned an error writing HKLM PropertyHandlers.
 
 Click OK on any regsvr32 MessageBox for the Windows error text.
@@ -117,9 +117,9 @@ if (-not $NoExplorerRestart) {
 if ($Action -eq "Register") {
     Write-Host "Registered successfully."
     Write-Host "Next:"
-    Write-Host "  1. Open testdata in a NEW Explorer window."
-    Write-Host "  2. View → Details."
-    Write-Host "  3. Right-click column header → More…"
+    Write-Host "  1. Open a Creo folder in a NEW Explorer window."
+    Write-Host "  2. View -> Details."
+    Write-Host "  3. Right-click column header -> More..."
     Write-Host "  4. Enable Authors, Tags, Comments, Title, Subject (try BOTH entries if a name appears twice)."
     Write-Host "  5. Press F5 to refresh."
 } else {
