@@ -46,6 +46,7 @@ class CreoPropertyStore final : public IInitializeWithStream,
   HRESULT InitializeFromBytes(const std::uint8_t* data, std::size_t size,
                               const std::wstring& path_hint);
   HRESULT CacheString(REFPROPERTYKEY key, const std::string& utf8);
+  HRESULT CacheStringVector(REFPROPERTYKEY key, const std::string& utf8);
   HRESULT CacheAuthor(const std::string& utf8);
 
   long ref_count_ = 1;

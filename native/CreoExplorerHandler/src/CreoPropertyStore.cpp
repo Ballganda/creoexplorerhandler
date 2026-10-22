@@ -126,6 +126,35 @@ bool HardcodedPropertyKey(const std::string& canonical, PROPERTYKEY* key) {
     return true;
   }
 
+  // Devices container FMTID {78C34FC8-104A-4ACA-9EA4-524D52996E57}
+  // Explorer "Classification" sits with Manufacturer/Model/Paired and is
+  // System.Devices.Category (not the non-existent Devices.Classification).
+  static const unsigned char kDevContainer4[8] = {0x9e, 0xa4, 0x52, 0x4d,
+                                                  0x52, 0x99, 0x6e, 0x57};
+  if (eq(canonical, "System.Devices.Category") ||
+      eq(canonical, "System.Devices.Classification") ||
+      eq(canonical, "System.Classification")) {
+    fill(key, 0x78c34fc8, 0x104a, 0x4aca, kDevContainer4, 91);
+    return true;
+  }
+  if (eq(canonical, "System.Devices.CategoryPlural")) {
+    fill(key, 0x78c34fc8, 0x104a, 0x4aca, kDevContainer4, 92);
+    return true;
+  }
+  if (eq(canonical, "System.Devices.CategoryGroup")) {
+    fill(key, 0x78c34fc8, 0x104a, 0x4aca, kDevContainer4, 94);
+    return true;
+  }
+
+  // System.Devices.PrimaryCategory — string sibling of Classification/Status
+  // {D08DD4C0-3A9E-462E-8290-7B636B2576B9}, 10
+  static const unsigned char kDevStatus4[8] = {0x82, 0x90, 0x7b, 0x63,
+                                               0x6b, 0x25, 0x76, 0xb9};
+  if (eq(canonical, "System.Devices.PrimaryCategory")) {
+    fill(key, 0xd08dd4c0, 0x3a9e, 0x462e, kDevStatus4, 10);
+    return true;
+  }
+
   // System.Photo.CameraManufacturer — Explorer column "Camera maker"
   // {14B81DA1-0135-4D31-96D9-6CBFC9671A99}, 271
   static const unsigned char kCam4[8] = {0x96, 0xd9, 0x6c, 0xbf,
@@ -220,6 +249,23 @@ HRESULT CreoPropertyStore::CacheAuthor(const std::string& utf8) {
   return hr;
 }
 
+HRESULT CreoPropertyStore::CacheStringVector(REFPROPERTYKEY key,
+                                             const std::string& utf8) {
+  if (cache_ == nullptr || utf8.empty()) {
+    return S_OK;
+  }
+  const std::wstring wide = Utf8ToWide(utf8);
+  PCWSTR values[] = {wide.c_str()};
+  PROPVARIANT var;
+  PropVariantInit(&var);
+  HRESULT hr = InitPropVariantFromStringVector(values, 1, &var);
+  if (SUCCEEDED(hr)) {
+    hr = cache_->SetValueAndState(key, &var, PSC_NORMAL);
+    PropVariantClear(&var);
+  }
+  return hr;
+}
+
 HRESULT CreoPropertyStore::InitializeFromBytes(const std::uint8_t* data,
                                                std::size_t size,
                                                const std::wstring& path_hint) {
@@ -255,6 +301,8 @@ HRESULT CreoPropertyStore::InitializeFromBytes(const std::uint8_t* data,
       }
       if (mapping::is_author_property(canonical_name)) {
         CacheAuthor(value);
+      } else if (mapping::is_multivalue_string_property(canonical_name)) {
+        CacheStringVector(key, value);
       } else {
         CacheString(key, value);
       }
@@ -272,11 +320,17 @@ HRESULT CreoPropertyStore::InitializeFromBytes(const std::uint8_t* data,
         }
         return s;
       }();
-      if (lower == "system.devices.classification" ||
-          lower == "system.sensitivitytext" ||
-          lower == "system.sensitivity") {
-        cache_named("System.Devices.Classification", value);
-        cache_named("System.SensitivityText", value);
+      // Classification column ≈ Devices.Category (+ PrimaryCategory string).
+      // Do NOT dual-write SensitivityText — that fills the Sensitivity column.
+      if (lower == "system.devices.category" ||
+          lower == "system.devices.classification" ||
+          lower == "system.devices.categoryplural" ||
+          lower == "system.devices.categorygroup" ||
+          lower == "system.devices.primarycategory" ||
+          lower == "system.classification") {
+        cache_named("System.Devices.Category", value);
+        cache_named("System.Devices.CategoryPlural", value);
+        cache_named("System.Devices.PrimaryCategory", value);
       } else if (lower == "system.devices.manufacturer" ||
                  lower == "system.photo.cameramanufacturer" ||
                  lower == "system.devices.devicemanufacturer") {

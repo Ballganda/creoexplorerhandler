@@ -43,6 +43,9 @@ std::wstring build_property_list(const Config& config);
 // True when the canonical property should be stored as a string vector (Authors).
 bool is_author_property(std::string_view canonical_name);
 
+// True when the property schema type is Multivalue String (e.g. Devices.Category).
+bool is_multivalue_string_property(std::string_view canonical_name);
+
 // Load CreoExplorerHandler.map from the folder that contains module_path.
 // Falls back to default_config() when the file is missing or has no mappings.
 Config load_config_beside_module(std::string_view module_path);

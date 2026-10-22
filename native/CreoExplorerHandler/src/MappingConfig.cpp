@@ -114,8 +114,10 @@ constexpr Alias kAliases[] = {
     {"Manufacturer", "System.Devices.Manufacturer"},
     {"Camera maker", "System.Photo.CameraManufacturer"},
     {"Camera Maker", "System.Photo.CameraManufacturer"},
-    // Explorer column "Classification" (Devices group, next to Manufacturer).
-    {"Classification", "System.Devices.Classification"},
+    // Explorer column "Classification" (Devices group, next to Manufacturer /
+    // Model / Paired). There is no System.Devices.Classification — the column
+    // is System.Devices.Category (singular device category).
+    {"Classification", "System.Devices.Category"},
     {"Sensitivity", "System.SensitivityText"},
 
     // Mistaken short / wrong-group System.* names.
@@ -126,7 +128,8 @@ constexpr Alias kAliases[] = {
     {"System.Subtitle", "System.Media.SubTitle"},
     {"System.Media.Subtitle", "System.Media.SubTitle"},
     {"System.ProgramName", "System.ApplicationName"},
-    {"System.Classification", "System.Devices.Classification"},
+    {"System.Classification", "System.Devices.Category"},
+    {"System.Devices.Classification", "System.Devices.Category"},
     {"System.SensitivityText", "System.SensitivityText"},
     {"System.Manufacturer", "System.Devices.Manufacturer"},
     {"System.Photo.CameraManufacturer", "System.Photo.CameraManufacturer"},
@@ -232,6 +235,13 @@ std::optional<std::string> resolve_canonical_name(
 
 bool is_author_property(std::string_view canonical_name) {
   return to_lower(canonical_name) == "system.author";
+}
+
+bool is_multivalue_string_property(std::string_view canonical_name) {
+  const std::string lower = to_lower(canonical_name);
+  return lower == "system.devices.category" ||
+         lower == "system.devices.categoryplural" ||
+         lower == "system.devices.categorygroup";
 }
 
 std::wstring build_property_list(const Config& config) {

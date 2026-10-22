@@ -34,4 +34,13 @@ Map file format (see comments at the top of CreoExplorerHandler.map):
   "Company" "COMPANY"
   "System.Document.RevisionNumber" "REV"
 
+Important column keys:
+  Classification  -> System.Devices.Category   (NOT System.Devices.Classification)
+  Manufacturer    -> System.Devices.Manufacturer
+  Location        -> System.Calendar.Location
+  Product version -> System.Software.ProductVersion
+
+If a column is blank, run Discover-ColumnProps.ps1 on the file; it prints the
+real PROPERTYKEY behind each Explorer column (MapColumnToSCID).
+
 After adding a new Explorer column name to the map, run Register.ps1 again.

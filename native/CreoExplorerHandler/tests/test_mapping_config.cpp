@@ -64,13 +64,19 @@ bogus line
   auto mfg = mapping::resolve_canonical_name("Manufacturer");
   EXPECT_TRUE(mfg && *mfg == "System.Devices.Manufacturer");
   auto cls = mapping::resolve_canonical_name("Classification");
-  EXPECT_TRUE(cls && *cls == "System.Devices.Classification");
+  EXPECT_TRUE(cls && *cls == "System.Devices.Category");
+  auto cls_wrong = mapping::resolve_canonical_name("System.Devices.Classification");
+  EXPECT_TRUE(cls_wrong && *cls_wrong == "System.Devices.Category");
+  auto cls_short = mapping::resolve_canonical_name("System.Classification");
+  EXPECT_TRUE(cls_short && *cls_short == "System.Devices.Category");
   auto wrong_loc = mapping::resolve_canonical_name("System.Contact.OfficeLocation");
   EXPECT_TRUE(wrong_loc && *wrong_loc == "System.Contact.OfficeLocation");
   auto bad = mapping::resolve_canonical_name("NotARealHeader");
   EXPECT_TRUE(!bad);
   EXPECT_TRUE(mapping::is_author_property("System.Author"));
   EXPECT_TRUE(!mapping::is_author_property("System.Title"));
+  EXPECT_TRUE(mapping::is_multivalue_string_property("System.Devices.Category"));
+  EXPECT_TRUE(!mapping::is_multivalue_string_property("System.Devices.Manufacturer"));
 
   const auto defaults = mapping::default_config();
   EXPECT_EQ(defaults.entries.size(), 5u);
