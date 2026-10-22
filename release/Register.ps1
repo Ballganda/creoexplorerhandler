@@ -32,7 +32,9 @@ Developer PowerShell for Visual Studio is NOT elevated — open a separate Admin
 Then:
   cd `"$PSScriptRoot`"
   Unblock-File .\Register.ps1, .\CreoExplorerHandler.dll, .\CreoExplorerHandler.map
-  .\Register.ps1 -Action $Action
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\Register.ps1 -Action $Action
+
+Or run Register.cmd as Administrator (same Bypass for one process).
 "@
 }
 

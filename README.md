@@ -19,8 +19,10 @@ Use an elevated shell (**Run as administrator**). Developer PowerShell for Visua
 ```powershell
 cd C:\path\to\that\folder
 Unblock-File .\Register.ps1, .\CreoExplorerHandler.dll, .\CreoExplorerHandler.map
-.\Register.ps1 -Action Register
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Register.ps1 -Action Register
 ```
+
+Or from an Admin prompt: `Register.cmd -Action Register` (bypasses unsigned-script policy for that process only).
 
 Then enable the mapped columns in Explorer Details (see below).
 
