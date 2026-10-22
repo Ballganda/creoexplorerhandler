@@ -4,6 +4,8 @@ Read-only Windows File Explorer Details columns for Creo Parametric `.prt` / `.a
 
 No Creo Toolkit. No GRANITE. The handler scans the Creo PSB file for string USER parameters and never writes to the model.
 
+> **Disclaimer — use at your own risk.** This is an AI-generated code project. It has not been reviewed in any way. You assume all risk from downloading, installing, or using this software.
+
 ## Quick install (prebuilt)
 
 From the [latest GitHub Release](https://github.com/Ballganda/creoexplorerhandler/releases), download:

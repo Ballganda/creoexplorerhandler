@@ -1,5 +1,9 @@
 CreoExplorerHandler.dll (x64) — cross-built for Windows
 
+DISCLAIMER — USE AT YOUR OWN RISK
+This is an AI-generated code project. It has not been reviewed in any way.
+You assume all risk from downloading, installing, or using this software.
+
 Install (must be Administrator — Developer PowerShell is NOT enough):
   1. Put these three files in one permanent folder, e.g.
        C:\Users\user\Projects\CreoExplorerHandler\release\
