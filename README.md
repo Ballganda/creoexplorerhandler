@@ -46,7 +46,7 @@ Keep `CreoExplorerHandler.map` **in the same folder as the DLL**. Edit it to cho
 - If the `.map` file is missing, the five defaults above are used.
 - After you **add a new column name**, re-run `Register.ps1` so Explorer’s Details list includes it. Changing only the Creo parameter on an already-registered column does not need re-register (restart Explorer or press F5 if values look stale).
 
-See the header comments inside `native/CreoExplorerHandler/CreoExplorerHandler.map` for the full alias list. Any other `System.*` string property is also accepted; not every Explorer column is a string field (dates, ratings, etc. are a poor fit for Creo string parameters).
+See the header comments inside `native/CreoExplorerHandler/CreoExplorerHandler.map` for the full alias list. Use **real** Windows canonical names — short guesses like `System.Initials` or `System.ProductVersion` are not valid and are ignored (or rewritten by built-in aliases in newer DLLs). Examples of correct names: `System.Contact.Initials`, `System.Media.SubTitle`, `System.ApplicationName`, `System.Contact.Department`.
 
 ## Creo parameter contract
 

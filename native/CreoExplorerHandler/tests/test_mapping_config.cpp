@@ -49,6 +49,14 @@ bogus line
   EXPECT_TRUE(authors && *authors == "System.Author");
   auto company = mapping::resolve_canonical_name("System.Company");
   EXPECT_TRUE(company && *company == "System.Company");
+  auto initials = mapping::resolve_canonical_name("System.Initials");
+  EXPECT_TRUE(initials && *initials == "System.Contact.Initials");
+  auto subtitle = mapping::resolve_canonical_name("System.Subtitle");
+  EXPECT_TRUE(subtitle && *subtitle == "System.Media.SubTitle");
+  auto program = mapping::resolve_canonical_name("System.ProgramName");
+  EXPECT_TRUE(program && *program == "System.ApplicationName");
+  auto product = mapping::resolve_canonical_name("System.ProductVersion");
+  EXPECT_TRUE(product && *product == "System.Document.RevisionNumber");
   auto bad = mapping::resolve_canonical_name("NotARealHeader");
   EXPECT_TRUE(!bad);
   EXPECT_TRUE(mapping::is_author_property("System.Author"));

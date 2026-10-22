@@ -1,59 +1,51 @@
-// Creo Explorer Property Handler — column mapping
+// Creo Explorer Property Handler - column mapping
 //
 // Place this file next to CreoExplorerHandler.dll (same folder).
-// Edit mappings, then re-run Register.ps1 so Explorer column lists update.
-// Explorer reads values from the DLL on each file open (no re-register needed
-// just to change which Creo parameter feeds an already-registered column).
+// Edit mappings, then re-run Register.ps1 when you ADD a new left-side name.
+// Changing only the Creo parameter on an existing left-side name: F5 / restart Explorer.
 //
 // Format (one mapping per line):
-//   "Windows explorer detail header name" "CREO_PARAMETER_NAME"
+//   "Windows property or header" "CREO_PARAMETER_NAME"
 //
 // Lines that start with // are comments. Blank lines are ignored.
 //
-// Left side — either:
-//   • An Explorer Details header alias (Authors, Tags, Company, …), or
-//   • A Windows canonical name (System.Author, System.Company, …)
+// Left side: Explorer header alias OR a real Windows canonical name (System.*).
+// Right side: exact Creo USER parameter name (usually UPPERCASE). String type only.
 //
-// Right side — exact Creo USER parameter name (Creo stores these UPPERCASE).
-// Only String-type Creo parameters are shown; Real/Number values are skipped.
+// IMPORTANT: Many short names like System.Initials are NOT valid. Use the
+// corrected names below. Invalid System.* names are ignored (value will not appear).
 //
-// Supported header aliases (also accept System.* forms):
-//   Authors / Author          → System.Author
-//   Tags / Keywords           → System.Keywords
-//   Comments / Comment        → System.Comment
-//   Title                     → System.Title
-//   Subject                   → System.Subject
-//   Company                   → System.Company
-//   Category                  → System.Category
-//   Status / Content status   → System.ContentStatus
-//   Copyright                 → System.Copyright
-//   Last author               → System.Document.LastAuthor
-//   Revision / Revision number→ System.Document.RevisionNumber
-//   Version / Version number  → System.Document.Version
-//   Manager                   → System.Document.Manager
-//   Client ID                 → System.Document.ClientID
-//   Document ID               → System.Document.DocumentID
-//   Contributor               → System.Document.Contributor
-//   Language                  → System.Language
-//   Source                    → System.Source
-//   File description          → System.FileDescription
-//   Software used             → System.SoftwareUsed
-//   Application name          → System.ApplicationName
-//   Content type              → System.ContentType
-//
-// Any other System.* string property name is also accepted on the left side.
-// After adding a new System.* name, run Register.ps1 again, then enable the
-// column in Explorer (right-click column header → More…).
-//
-// Default mappings (same as the built-in fallback if this file is missing):
+// Default mappings:
 
-"Authors" "AUTHORS"
-"Tags" "TAGS"
-"Comments" "COMMENTS"
-"Title" "TITLE"
-"Subject" "SUBJECT"
+"System.Document.RevisionNumber" "SYS_REVISION"
+"System.FileVersion" "SYS_FILEVERSION"
+"System.Document.Version" "SYS_FILEVERSION"
+"System.ContentStatus" "SYS_STATUS"
+"System.Author" "SYS_AUTHORS"
+"System.Contact.Initials" "SYS_APPROVED_BY_INITIALS"
+"System.Title" "SYS_TITLE"
+"System.Media.SubTitle" "SYS_SUBTITLE"
+"System.Company" "SYS_COMPANY"
+"System.Contact.Department" "SYS_DEPARTMENT"
+"System.ApplicationName" "SYS_PROGRAM_NAME"
+"System.Project" "SYS_PROJECT"
+"System.Category" "SYS_CATEGORY"
+"System.SensitivityText" "SYS_CLASSIFICATION"
+"System.Photo.CameraManufacturer" "SYS_MANUFACTURER"
+"System.Contact.OfficeLocation" "SYS_LOCATION"
+"System.Keywords" "SYS_TAGS"
+"System.Comment" "SYS_COMMENTS"
+"System.Subject" "SYS_SUBJECT"
 
-// Examples — uncomment and set your Creo parameter names:
-// "Company" "COMPANY"
-// "System.Document.RevisionNumber" "REV"
-// "Category" "PRODUCT_LINE"
+// Corrections for common mistaken names (also handled as aliases in the DLL):
+//   System.ProductVersion  -> does not exist; use System.Document.RevisionNumber
+//   System.Initials        -> System.Contact.Initials
+//   System.Subtitle        -> System.Media.SubTitle   (capital T in SubTitle)
+//   System.Department      -> System.Contact.Department
+//   System.ProgramName     -> System.ApplicationName
+//   System.Classification  -> System.SensitivityText
+//   System.Manufacturer    -> System.Photo.CameraManufacturer
+//   System.Location        -> System.Contact.OfficeLocation
+//
+// Note: System.Document.RevisionNumber / System.Document.Version show in
+// Properties > Details but often have NO Explorer Details-view column.

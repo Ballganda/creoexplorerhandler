@@ -56,8 +56,9 @@ struct Alias {
   const char* canonical;
 };
 
-// Common Explorer Details headers → System.* canonical names.
-// Users may also write System.* directly in the map file.
+// Friendly headers and common mistaken System.* names → real canonical names.
+// PSGetPropertyKeyFromName only accepts registered schema names; unknown
+// System.Foo entries are skipped silently by the property store.
 constexpr Alias kAliases[] = {
     {"Authors", "System.Author"},
     {"Author", "System.Author"},
@@ -69,6 +70,7 @@ constexpr Alias kAliases[] = {
     {"Subject", "System.Subject"},
     {"Company", "System.Company"},
     {"Category", "System.Category"},
+    {"Categories", "System.Category"},
     {"Status", "System.ContentStatus"},
     {"Content status", "System.ContentStatus"},
     {"Content Status", "System.ContentStatus"},
@@ -81,20 +83,49 @@ constexpr Alias kAliases[] = {
     {"Version number", "System.Document.Version"},
     {"Version Number", "System.Document.Version"},
     {"Version", "System.Document.Version"},
+    {"File version", "System.FileVersion"},
+    {"File Version", "System.FileVersion"},
     {"Manager", "System.Document.Manager"},
     {"Client ID", "System.Document.ClientID"},
     {"Document ID", "System.Document.DocumentID"},
     {"Contributor", "System.Document.Contributor"},
     {"Language", "System.Language"},
     {"Source", "System.Source"},
+    {"Project", "System.Project"},
     {"File description", "System.FileDescription"},
     {"File Description", "System.FileDescription"},
     {"Software used", "System.SoftwareUsed"},
     {"Software Used", "System.SoftwareUsed"},
     {"Application name", "System.ApplicationName"},
     {"Application Name", "System.ApplicationName"},
+    {"Program name", "System.ApplicationName"},
+    {"Program Name", "System.ApplicationName"},
     {"Content type", "System.ContentType"},
     {"Content Type", "System.ContentType"},
+    {"Initials", "System.Contact.Initials"},
+    {"Department", "System.Contact.Department"},
+    {"Location", "System.Contact.OfficeLocation"},
+    {"Office location", "System.Contact.OfficeLocation"},
+    {"Office Location", "System.Contact.OfficeLocation"},
+    {"Subtitle", "System.Media.SubTitle"},
+    {"SubTitle", "System.Media.SubTitle"},
+    {"Manufacturer", "System.Photo.CameraManufacturer"},
+    {"Classification", "System.SensitivityText"},
+    {"Sensitivity", "System.SensitivityText"},
+
+    // Mistaken short System.* names (not in the Windows schema).
+    {"System.Initials", "System.Contact.Initials"},
+    {"System.Department", "System.Contact.Department"},
+    {"System.Location", "System.Contact.OfficeLocation"},
+    {"System.Subtitle", "System.Media.SubTitle"},
+    {"System.Media.Subtitle", "System.Media.SubTitle"},
+    {"System.ProgramName", "System.ApplicationName"},
+    {"System.Classification", "System.SensitivityText"},
+    {"System.Manufacturer", "System.Photo.CameraManufacturer"},
+    // System.ProductVersion does not exist; map to document revision label.
+    {"System.ProductVersion", "System.Document.RevisionNumber"},
+    {"Product version", "System.Document.RevisionNumber"},
+    {"Product Version", "System.Document.RevisionNumber"},
 };
 
 }  // namespace
@@ -169,6 +200,15 @@ std::optional<std::string> resolve_canonical_name(
   if (trimmed.empty()) {
     return std::nullopt;
   }
+
+  // Aliases first so mistaken System.Initials etc. are rewritten.
+  const std::string needle = to_lower(trimmed);
+  for (const Alias& alias : kAliases) {
+    if (to_lower(alias.header) == needle) {
+      return std::string(alias.canonical);
+    }
+  }
+
   if (trimmed.size() > 7 &&
       (trimmed.compare(0, 7, "System.") == 0 ||
        trimmed.compare(0, 7, "system.") == 0)) {
@@ -177,12 +217,6 @@ std::optional<std::string> resolve_canonical_name(
     return out;
   }
 
-  const std::string needle = to_lower(trimmed);
-  for (const Alias& alias : kAliases) {
-    if (to_lower(alias.header) == needle) {
-      return std::string(alias.canonical);
-    }
-  }
   return std::nullopt;
 }
 
