@@ -157,6 +157,36 @@ std::optional<std::string> value_from_e3_near_name(const std::uint8_t* data,
   return std::nullopt;
 }
 
+struct NeedleState {
+  std::string_view name;
+  std::optional<std::string> best_e2;
+  std::optional<std::string> best_e3;
+};
+
+bool name_boundary_ok(const std::uint8_t* data, std::size_t i) {
+  if (i == 0) {
+    return true;
+  }
+  const auto prev = data[i - 1];
+  return !(is_printable_ascii(prev) &&
+           (std::isalnum(prev) || prev == '_' || prev == '-'));
+}
+
+void apply_match(NeedleState& needle, const std::uint8_t* data, std::size_t size,
+                 std::size_t name_end) {
+  if (auto e2 = value_from_e2_table(data, size, name_end)) {
+    needle.best_e2 = std::move(e2);
+    return;
+  }
+  if (auto e3 = value_from_e3_near_name(data, size, name_end)) {
+    needle.best_e3 = std::move(e3);
+  }
+}
+
+std::size_t scan_limit(std::size_t size) {
+  return std::min(size, kMaxParamScanBytes);
+}
+
 std::optional<std::string> find_param_string(const std::uint8_t* data,
                                             std::size_t size,
                                             std::string_view name) {
@@ -164,40 +194,30 @@ std::optional<std::string> find_param_string(const std::uint8_t* data,
     return std::nullopt;
   }
 
-  std::optional<std::string> best_e2;
-  std::optional<std::string> best_e3;
-  const auto* needle = reinterpret_cast<const std::uint8_t*>(name.data());
+  NeedleState needle{name, std::nullopt, std::nullopt};
+  const auto* needle_bytes = reinterpret_cast<const std::uint8_t*>(name.data());
   const std::size_t needle_len = name.size();
+  const std::size_t limit = scan_limit(size);
 
-  for (std::size_t i = 0; i + needle_len + 1 < size; ++i) {
-    if (data[i + needle_len] != 0x00) {
+  // Anchor on NAME\0 terminators instead of probing every byte offset.
+  for (std::size_t end = needle_len; end < limit; ++end) {
+    if (data[end] != 0x00) {
       continue;
     }
-    if (!std::equal(needle, needle + needle_len, data + i)) {
+    const std::size_t start = end - needle_len;
+    if (!std::equal(needle_bytes, needle_bytes + needle_len, data + start)) {
       continue;
     }
-    if (i > 0) {
-      const auto prev = data[i - 1];
-      if (is_printable_ascii(prev) &&
-          (std::isalnum(prev) || prev == '_' || prev == '-')) {
-        continue;
-      }
-    }
-
-    const std::size_t name_end = i + needle_len + 1;
-    if (auto e2 = value_from_e2_table(data, size, name_end)) {
-      best_e2 = std::move(e2);
+    if (!name_boundary_ok(data, start)) {
       continue;
     }
-    if (auto e3 = value_from_e3_near_name(data, size, name_end)) {
-      best_e3 = std::move(e3);
-    }
+    apply_match(needle, data, size, end + 1);
   }
 
-  if (best_e2) {
-    return best_e2;
+  if (needle.best_e2) {
+    return needle.best_e2;
   }
-  return best_e3;
+  return needle.best_e3;
 }
 
 }  // namespace
@@ -236,17 +256,141 @@ std::optional<std::string> extract_string_param(const std::uint8_t* data,
   return find_param_string(data, size, param_name);
 }
 
+std::unordered_map<std::string, std::string> extract_string_params(
+    const std::uint8_t* data, std::size_t size,
+    const std::vector<std::string>& param_names) {
+  std::unordered_map<std::string, std::string> out;
+  if (!is_creo_ugc_file(data, size) || param_names.empty()) {
+    return out;
+  }
+
+  std::vector<NeedleState> needles;
+  needles.reserve(param_names.size());
+  for (const std::string& name : param_names) {
+    if (name.empty()) {
+      continue;
+    }
+    bool dup = false;
+    for (const auto& existing : needles) {
+      if (existing.name == name) {
+        dup = true;
+        break;
+      }
+    }
+    if (!dup) {
+      needles.push_back(NeedleState{name, std::nullopt, std::nullopt});
+    }
+  }
+  if (needles.empty()) {
+    return out;
+  }
+
+  std::size_t min_len = needles.front().name.size();
+  for (const auto& n : needles) {
+    min_len = std::min(min_len, n.name.size());
+  }
+
+  // Small open-address table: FNV-1a of name bytes -> needle. Lookup from the
+  // file buffer avoids per-NUL memcmp against every mapped parameter.
+  constexpr std::size_t kBuckets = 64;
+  NeedleState* table[kBuckets] = {};
+  auto fnv1a = [](const std::uint8_t* p, std::size_t n) -> std::uint32_t {
+    std::uint32_t h = 2166136261u;
+    for (std::size_t i = 0; i < n; ++i) {
+      h ^= p[i];
+      h *= 16777619u;
+    }
+    return h;
+  };
+  auto insert = [&](NeedleState* needle) {
+    const auto* p =
+        reinterpret_cast<const std::uint8_t*>(needle->name.data());
+    std::uint32_t h = fnv1a(p, needle->name.size());
+    for (std::size_t i = 0; i < kBuckets; ++i) {
+      NeedleState*& slot = table[(h + i) % kBuckets];
+      if (slot == nullptr) {
+        slot = needle;
+        return;
+      }
+    }
+  };
+  for (NeedleState& needle : needles) {
+    insert(&needle);
+  }
+
+  const std::size_t limit = scan_limit(size);
+  // One pass anchored on \0: last e2/e3 match wins per name.
+  for (std::size_t end = min_len; end < limit; ++end) {
+    if (data[end] != 0x00) {
+      continue;
+    }
+    // Candidate lengths: walk backward over a plausible identifier run.
+    std::size_t start = end;
+    while (start > 0) {
+      const auto c = data[start - 1];
+      if (!(std::isalnum(c) || c == '_' || c == '-')) {
+        break;
+      }
+      --start;
+      if (end - start > 64) {
+        start = end - 64;
+        break;
+      }
+    }
+    if (start == end || !name_boundary_ok(data, start)) {
+      continue;
+    }
+    const std::size_t len = end - start;
+    const std::uint32_t h = fnv1a(data + start, len);
+    for (std::size_t i = 0; i < kBuckets; ++i) {
+      NeedleState* slot = table[(h + i) % kBuckets];
+      if (slot == nullptr) {
+        break;
+      }
+      if (slot->name.size() != len) {
+        continue;
+      }
+      const auto* nb =
+          reinterpret_cast<const std::uint8_t*>(slot->name.data());
+      if (!std::equal(nb, nb + len, data + start)) {
+        continue;
+      }
+      apply_match(*slot, data, size, end + 1);
+      break;
+    }
+  }
+
+  for (const NeedleState& needle : needles) {
+    if (needle.best_e2) {
+      out.emplace(std::string(needle.name), *needle.best_e2);
+    } else if (needle.best_e3) {
+      out.emplace(std::string(needle.name), *needle.best_e3);
+    }
+  }
+  return out;
+}
+
 ExplorerParams extract_explorer_params(const std::uint8_t* data,
                                        std::size_t size) {
   ExplorerParams out;
   if (!is_creo_ugc_file(data, size)) {
     return out;
   }
-  out.authors = extract_string_param(data, size, "AUTHORS");
-  out.tags = extract_string_param(data, size, "TAGS");
-  out.comments = extract_string_param(data, size, "COMMENTS");
-  out.title = extract_string_param(data, size, "TITLE");
-  out.subject = extract_string_param(data, size, "SUBJECT");
+  const std::vector<std::string> names = {"AUTHORS", "TAGS", "COMMENTS",
+                                          "TITLE", "SUBJECT"};
+  const auto values = extract_string_params(data, size, names);
+  auto get = [&](const char* key) -> std::optional<std::string> {
+    const auto it = values.find(key);
+    if (it == values.end()) {
+      return std::nullopt;
+    }
+    return it->second;
+  };
+  out.authors = get("AUTHORS");
+  out.tags = get("TAGS");
+  out.comments = get("COMMENTS");
+  out.title = get("TITLE");
+  out.subject = get("SUBJECT");
   return out;
 }
 
@@ -262,13 +406,14 @@ ExplorerParams extract_explorer_params_from_file(const std::string& path) {
   in.seekg(0, std::ios::end);
   const auto len = static_cast<std::size_t>(in.tellg());
   in.seekg(0, std::ios::beg);
-  std::vector<std::uint8_t> buffer(len);
   if (len == 0) {
     return empty;
   }
+  const std::size_t to_read = std::min(len, kMaxParamScanBytes);
+  std::vector<std::uint8_t> buffer(to_read);
   in.read(reinterpret_cast<char*>(buffer.data()),
-          static_cast<std::streamsize>(len));
-  if (!in) {
+          static_cast<std::streamsize>(to_read));
+  if (!in && !in.eof()) {
     return empty;
   }
   return extract_explorer_params(buffer.data(), buffer.size());

@@ -48,3 +48,8 @@ If a column is blank, run Discover-ColumnProps.ps1 on the file; it prints the
 real PROPERTYKEY behind each Explorer column (MapColumnToSCID).
 
 After adding a new Explorer column name to the map, run Register.ps1 again.
+Changing only the Creo parameter on an existing left-side name: F5 is enough
+(the DLL reloads the .map when its mtime changes; restart Explorer if needed).
+
+Performance: the handler caches the map in-process, reads at most the first
+32 MiB of each Creo file, and extracts all mapped parameters in one scan.

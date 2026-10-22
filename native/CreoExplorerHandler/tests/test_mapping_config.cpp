@@ -44,6 +44,11 @@ bogus line
   EXPECT_EQ(cfg.entries[2].explorer_name, "System.Company");
   EXPECT_EQ(cfg.entries[2].creo_param, "COMPANY");
   EXPECT_EQ(cfg.entries[3].explorer_name, "NotARealHeader");
+  // NotARealHeader is skipped; Authors/Tags/Company resolve.
+  EXPECT_EQ(cfg.resolved.size(), 3u);
+  EXPECT_EQ(cfg.resolved[0].canonical_name, "System.Author");
+  EXPECT_EQ(cfg.resolved[0].creo_param, "AUTHORS");
+  EXPECT_EQ(cfg.resolved[2].canonical_name, "System.Company");
 
   auto authors = mapping::resolve_canonical_name("Authors");
   EXPECT_TRUE(authors && *authors == "System.Author");
@@ -82,6 +87,15 @@ bogus line
 
   const auto defaults = mapping::default_config();
   EXPECT_EQ(defaults.entries.size(), 5u);
+  EXPECT_EQ(defaults.resolved.size(), 5u);
+
+  mapping::clear_config_cache_for_tests();
+  const auto& cached1 = mapping::cached_config_beside_module(
+      "/workspace/native/CreoExplorerHandler/CreoExplorerHandler.dll");
+  EXPECT_TRUE(!cached1.resolved.empty());
+  const auto& cached2 = mapping::cached_config_beside_module(
+      "/workspace/native/CreoExplorerHandler/CreoExplorerHandler.dll");
+  EXPECT_TRUE(&cached1 == &cached2);
 
   const auto list = mapping::build_property_list(cfg);
   EXPECT_TRUE(list.find(L"System.Author") != std::wstring::npos);

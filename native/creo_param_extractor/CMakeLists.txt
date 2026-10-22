@@ -18,6 +18,12 @@ target_link_libraries(test_extractor PRIVATE creo_param_extractor)
 add_executable(dump_props src/dump_props.cpp)
 target_link_libraries(dump_props PRIVATE creo_param_extractor)
 
+add_executable(stress_hotpath tests/stress_hotpath.cpp
+  ../CreoExplorerHandler/src/MappingConfig.cpp)
+target_include_directories(stress_hotpath PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/../CreoExplorerHandler/include)
+target_link_libraries(stress_hotpath PRIVATE creo_param_extractor)
+
 enable_testing()
 add_test(NAME extractor_sample COMMAND test_extractor
   ${CMAKE_SOURCE_DIR}/../../testdata/detailstest.prt.2)

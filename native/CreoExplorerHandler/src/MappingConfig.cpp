@@ -2,8 +2,11 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <fstream>
+#include <mutex>
 #include <sstream>
+#include <sys/stat.h>
 
 namespace mapping {
 namespace {
@@ -154,6 +157,7 @@ Config default_config() {
       {"Title", "TITLE"},
       {"Subject", "SUBJECT"},
   };
+  resolve_entries(cfg);
   return cfg;
 }
 
@@ -193,6 +197,7 @@ Config parse_config_text(std::string_view text) {
     }
     cfg.entries.push_back(Entry{std::move(explorer), std::move(creo)});
   }
+  resolve_entries(cfg);
   return cfg;
 }
 
@@ -233,6 +238,19 @@ std::optional<std::string> resolve_canonical_name(
   }
 
   return std::nullopt;
+}
+
+void resolve_entries(Config& config) {
+  config.resolved.clear();
+  config.resolved.reserve(config.entries.size());
+  for (const Entry& entry : config.entries) {
+    auto canon = resolve_canonical_name(entry.explorer_name);
+    if (!canon) {
+      continue;
+    }
+    config.resolved.push_back(
+        ResolvedEntry{std::move(*canon), entry.creo_param});
+  }
 }
 
 bool is_author_property(std::string_view canonical_name) {
@@ -277,15 +295,45 @@ std::wstring build_property_list(const Config& config) {
   return out;
 }
 
-Config load_config_beside_module(std::string_view module_path) {
-  std::string map_path;
+namespace {
+
+std::string map_path_beside_module(std::string_view module_path) {
   const auto slash = module_path.find_last_of("/\\");
   if (slash == std::string_view::npos) {
-    map_path = "CreoExplorerHandler.map";
-  } else {
-    map_path.assign(module_path.substr(0, slash + 1));
-    map_path += "CreoExplorerHandler.map";
+    return "CreoExplorerHandler.map";
   }
+  std::string map_path;
+  map_path.assign(module_path.substr(0, slash + 1));
+  map_path += "CreoExplorerHandler.map";
+  return map_path;
+}
+
+// Portable mtime stamp (seconds). Missing file → 0.
+std::int64_t file_mtime_seconds(const std::string& path) {
+  struct stat st {};
+  if (stat(path.c_str(), &st) != 0) {
+    return 0;
+  }
+  return static_cast<std::int64_t>(st.st_mtime);
+}
+
+struct ConfigCache {
+  std::mutex mu;
+  Config config;
+  std::string map_path;
+  std::int64_t mtime = -1;
+  bool loaded = false;
+};
+
+ConfigCache& config_cache() {
+  static ConfigCache cache;
+  return cache;
+}
+
+}  // namespace
+
+Config load_config_beside_module(std::string_view module_path) {
+  const std::string map_path = map_path_beside_module(module_path);
 
   if (auto text = read_text_file(map_path)) {
     Config cfg = parse_config_text(*text);
@@ -295,6 +343,31 @@ Config load_config_beside_module(std::string_view module_path) {
     }
   }
   return default_config();
+}
+
+const Config& cached_config_beside_module(std::string_view module_path) {
+  ConfigCache& cache = config_cache();
+  const std::string map_path = map_path_beside_module(module_path);
+  const std::int64_t mtime = file_mtime_seconds(map_path);
+
+  std::lock_guard<std::mutex> lock(cache.mu);
+  if (cache.loaded && cache.map_path == map_path && cache.mtime == mtime) {
+    return cache.config;
+  }
+  cache.config = load_config_beside_module(module_path);
+  cache.map_path = map_path;
+  cache.mtime = mtime;
+  cache.loaded = true;
+  return cache.config;
+}
+
+void clear_config_cache_for_tests() {
+  ConfigCache& cache = config_cache();
+  std::lock_guard<std::mutex> lock(cache.mu);
+  cache.config = Config{};
+  cache.map_path.clear();
+  cache.mtime = -1;
+  cache.loaded = false;
 }
 
 }  // namespace mapping

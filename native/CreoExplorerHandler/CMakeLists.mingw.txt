@@ -27,7 +27,17 @@ target_compile_definitions(CreoExplorerHandler PRIVATE
   NDEBUG
 )
 
+# Cross-build (from repo root / native/CreoExplorerHandler):
+#   x86_64-w64-mingw32-g++ -std=c++17 -O2 -shared -static-libgcc -static-libstdc++ \
+#     -municode -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE -D_WINDLL -DNDEBUG \
+#     -Iinclude -I../creo_param_extractor/include \
+#     -o bin/Release/CreoExplorerHandler.dll \
+#     src/ClassFactory.cpp src/CreoPropertyStore.cpp src/MappingConfig.cpp src/dllmain.cpp \
+#     ../creo_param_extractor/src/creo_param_extractor.cpp src/CreoExplorerHandler.def \
+#     -lpropsys -lshlwapi -lole32 -lshell32 -luuid -loleaut32
+#   x86_64-w64-mingw32-strip --strip-unneeded bin/Release/CreoExplorerHandler.dll
 target_compile_options(CreoExplorerHandler PRIVATE -O2 -Wall)
+target_link_options(CreoExplorerHandler PRIVATE -static-libgcc -static-libstdc++)
 
 target_link_libraries(CreoExplorerHandler PRIVATE
   propsys

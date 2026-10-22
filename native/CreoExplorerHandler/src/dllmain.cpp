@@ -42,12 +42,13 @@ std::string WideToUtf8(std::wstring_view wide) {
   return out;
 }
 
-mapping::Config LoadMappingConfig() {
+const mapping::Config& LoadMappingConfig() {
   wchar_t module_path[MAX_PATH] = {};
   if (FAILED(GetModulePath(module_path, ARRAYSIZE(module_path)))) {
-    return mapping::default_config();
+    static const mapping::Config kDefaults = mapping::default_config();
+    return kDefaults;
   }
-  return mapping::load_config_beside_module(WideToUtf8(module_path));
+  return mapping::cached_config_beside_module(WideToUtf8(module_path));
 }
 
 HRESULT SetRegistryKeyValue(HKEY root, const wchar_t* subkey,

@@ -5,7 +5,9 @@
 
 #include <cctype>
 #include <cstring>
+#include <mutex>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 #include "DllCommon.h"
@@ -44,14 +46,15 @@ std::wstring Utf8ToWide(const std::string& utf8) {
   return out;
 }
 
-mapping::Config LoadMappingConfig() {
+const mapping::Config& LoadMappingConfig() {
   wchar_t module_path[MAX_PATH] = {};
   const DWORD got =
       GetModuleFileNameW(DllInstance(), module_path, ARRAYSIZE(module_path));
   if (got == 0 || got >= ARRAYSIZE(module_path)) {
-    return mapping::default_config();
+    static const mapping::Config kDefaults = mapping::default_config();
+    return kDefaults;
   }
-  return mapping::load_config_beside_module(WideToUtf8(module_path));
+  return mapping::cached_config_beside_module(WideToUtf8(module_path));
 }
 
 // Keys that some Windows builds omit from PSGetPropertyKeyFromName but that
@@ -167,19 +170,62 @@ bool HardcodedPropertyKey(const std::string& canonical, PROPERTYKEY* key) {
   return false;
 }
 
+struct PropertyKeyCache {
+  std::mutex mu;
+  std::unordered_map<std::string, PROPERTYKEY> keys;
+  std::unordered_map<std::string, bool> failed;
+};
+
+PropertyKeyCache& property_key_cache() {
+  static PropertyKeyCache cache;
+  return cache;
+}
+
 HRESULT ResolvePropertyKey(const std::string& canonical, PROPERTYKEY* key) {
   if (key == nullptr || canonical.empty()) {
     return E_INVALIDARG;
   }
-  const std::wstring wide = Utf8ToWide(canonical);
-  const HRESULT hr = PSGetPropertyKeyFromName(wide.c_str(), key);
+
+  PropertyKeyCache& cache = property_key_cache();
+  {
+    std::lock_guard<std::mutex> lock(cache.mu);
+    const auto it = cache.keys.find(canonical);
+    if (it != cache.keys.end()) {
+      *key = it->second;
+      return S_OK;
+    }
+    if (cache.failed.count(canonical) != 0) {
+      return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+    }
+  }
+
+  PROPERTYKEY resolved = {};
+  HRESULT hr = E_FAIL;
+  if (HardcodedPropertyKey(canonical, &resolved)) {
+    hr = S_OK;
+  } else {
+    const std::wstring wide = Utf8ToWide(canonical);
+    hr = PSGetPropertyKeyFromName(wide.c_str(), &resolved);
+  }
+
+  std::lock_guard<std::mutex> lock(cache.mu);
   if (SUCCEEDED(hr)) {
+    cache.keys[canonical] = resolved;
+    *key = resolved;
     return hr;
   }
-  if (HardcodedPropertyKey(canonical, key)) {
-    return S_OK;
-  }
+  cache.failed[canonical] = true;
   return hr;
+}
+
+std::size_t BoundReadSize(std::uint64_t file_size) {
+  if (file_size == 0) {
+    return 0;
+  }
+  if (file_size > creo::kMaxParamScanBytes) {
+    return creo::kMaxParamScanBytes;
+  }
+  return static_cast<std::size_t>(file_size);
 }
 
 }  // namespace
@@ -292,7 +338,7 @@ HRESULT CreoPropertyStore::InitializeFromBytes(const std::uint8_t* data,
   }
 
   if (creo::is_creo_ugc_file(data, size)) {
-    const mapping::Config cfg = LoadMappingConfig();
+    const mapping::Config& cfg = LoadMappingConfig();
     auto cache_named = [&](const std::string& canonical_name,
                            const std::string& value) {
       PROPERTYKEY key = {};
@@ -345,17 +391,20 @@ HRESULT CreoPropertyStore::InitializeFromBytes(const std::uint8_t* data,
       }
     };
 
-    for (const mapping::Entry& entry : cfg.entries) {
-      const auto canonical = mapping::resolve_canonical_name(entry.explorer_name);
-      if (!canonical) {
+    std::vector<std::string> creo_names;
+    creo_names.reserve(cfg.resolved.size());
+    for (const mapping::ResolvedEntry& entry : cfg.resolved) {
+      creo_names.push_back(entry.creo_param);
+    }
+    const auto values =
+        creo::extract_string_params(data, size, creo_names);
+
+    for (const mapping::ResolvedEntry& entry : cfg.resolved) {
+      const auto it = values.find(entry.creo_param);
+      if (it == values.end() || it->second.empty()) {
         continue;
       }
-      const auto value =
-          creo::extract_string_param(data, size, entry.creo_param);
-      if (!value || value->empty()) {
-        continue;
-      }
-      cache_with_aliases(*canonical, *value);
+      cache_with_aliases(entry.canonical_name, it->second);
     }
   }
 
@@ -377,8 +426,9 @@ IFACEMETHODIMP CreoPropertyStore::Initialize(IStream* pstream, DWORD grfMode) {
   if (FAILED(hr)) {
     return hr;
   }
-  if (stat.cbSize.QuadPart == 0 || stat.cbSize.QuadPart > 256ull * 1024ull * 1024ull) {
-    // Empty or absurdly large — still initialize an empty cache.
+  // Reject empty or absurdly large streams; still expose an empty property store.
+  if (stat.cbSize.QuadPart == 0 ||
+      stat.cbSize.QuadPart > 256ull * 1024ull * 1024ull) {
     hr = PSCreateMemoryPropertyStore(IID_PPV_ARGS(&cache_));
     if (SUCCEEDED(hr)) {
       initialized_ = true;
@@ -386,7 +436,7 @@ IFACEMETHODIMP CreoPropertyStore::Initialize(IStream* pstream, DWORD grfMode) {
     return hr;
   }
 
-  const auto size = static_cast<std::size_t>(stat.cbSize.QuadPart);
+  const auto size = BoundReadSize(stat.cbSize.QuadPart);
   std::vector<std::uint8_t> buffer(size);
   ULONG read = 0;
   hr = pstream->Read(buffer.data(), static_cast<ULONG>(size), &read);
@@ -419,7 +469,8 @@ IFACEMETHODIMP CreoPropertyStore::Initialize(LPCWSTR pszFilePath,
   HANDLE file =
       CreateFileW(pszFilePath, GENERIC_READ,
                   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
-                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
+                  nullptr);
   if (file == INVALID_HANDLE_VALUE) {
     return HRESULT_FROM_WIN32(GetLastError());
   }
@@ -439,7 +490,7 @@ IFACEMETHODIMP CreoPropertyStore::Initialize(LPCWSTR pszFilePath,
     return hr;
   }
 
-  const auto size = static_cast<std::size_t>(file_size.QuadPart);
+  const auto size = BoundReadSize(static_cast<std::uint64_t>(file_size.QuadPart));
   std::vector<std::uint8_t> buffer(size);
   DWORD read = 0;
   const BOOL ok =

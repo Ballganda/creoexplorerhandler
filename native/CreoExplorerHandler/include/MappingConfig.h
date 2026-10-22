@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -15,8 +16,16 @@ struct Entry {
   std::string creo_param;
 };
 
+// Pre-resolved mapping used on the Initialize hot path.
+struct ResolvedEntry {
+  std::string canonical_name;
+  std::string creo_param;
+};
+
 struct Config {
   std::vector<Entry> entries;
+  // Populated by load/cache helpers: only entries with a resolvable System.* name.
+  std::vector<ResolvedEntry> resolved;
   // Path that was loaded, or empty when built-in defaults are used.
   std::string source_path;
 };
@@ -28,6 +37,9 @@ Config default_config();
 //   "Windows explorer detail header name" "CREO_PARAMETER_NAME"
 // Unknown/malformed mapping lines are skipped.
 Config parse_config_text(std::string_view text);
+
+// Fill config.resolved from config.entries (skips unresolvable names).
+void resolve_entries(Config& config);
 
 // Load UTF-8 text from path. Returns nullopt if the file cannot be read.
 std::optional<std::string> read_text_file(const std::string& path);
@@ -49,5 +61,12 @@ bool is_multivalue_string_property(std::string_view canonical_name);
 // Load CreoExplorerHandler.map from the folder that contains module_path.
 // Falls back to default_config() when the file is missing or has no mappings.
 Config load_config_beside_module(std::string_view module_path);
+
+// Process-wide cached mapping. Reloads when the .map file mtime changes
+// (or when the path beside the module changes). Thread-safe.
+const Config& cached_config_beside_module(std::string_view module_path);
+
+// Test helper: clear the process-wide mapping cache.
+void clear_config_cache_for_tests();
 
 }  // namespace mapping

@@ -46,7 +46,8 @@ Keep `CreoExplorerHandler.map` **in the same folder as the DLL**. Edit it to cho
 - Left side: Explorer header alias (`Authors`, `Company`, …) or a Windows canonical name (`System.Author`, `System.Company`, …).
 - Right side: exact Creo USER parameter name (Creo stores these **UPPERCASE**). String type only.
 - If the `.map` file is missing, the five defaults above are used.
-- After you **add a new column name**, re-run `Register.ps1` so Explorer’s Details list includes it. Changing only the Creo parameter on an already-registered column does not need re-register (restart Explorer or press F5 if values look stale).
+- After you **add a new column name**, re-run `Register.ps1` so Explorer’s Details list includes it. Changing only the Creo parameter on an already-registered column does not need re-register: the DLL reloads the `.map` when its mtime changes (press F5 / restart Explorer if values look stale).
+- The handler reads at most the first 32 MiB of each file and extracts all mapped Creo names in one scan, so large folders stay responsive.
 
 See the header comments inside `native/CreoExplorerHandler/CreoExplorerHandler.map` for the full alias list. Use **real** Windows canonical names — short guesses like `System.Initials` or `System.ProductVersion` are not valid and are ignored (or rewritten by built-in aliases in newer DLLs). Examples of correct names: `System.Contact.Initials`, `System.Media.SubTitle`, `System.ApplicationName`, `System.Contact.Department`.
 

@@ -93,6 +93,16 @@ int main() {
     const auto missing =
         creo::extract_string_param(buf.data(), buf.size(), "NO_SUCH_PARAM");
     EXPECT_EMPTY(missing);
+
+    const std::vector<std::string> names = {"AUTHORS", "TAGS", "COMMENTS",
+                                            "TITLE", "SUBJECT",
+                                            "NO_SUCH_PARAM"};
+    const auto multi =
+        creo::extract_string_params(buf.data(), buf.size(), names);
+    EXPECT_TRUE(multi.count("AUTHORS") == 1 && multi.at("AUTHORS") == "BRO");
+    EXPECT_TRUE(multi.count("TAGS") == 1 &&
+                multi.at("TAGS") == "Product Line");
+    EXPECT_TRUE(multi.count("NO_SUCH_PARAM") == 0);
   }
 
   const auto new_params =

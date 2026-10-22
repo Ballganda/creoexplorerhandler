@@ -2,7 +2,8 @@
 //
 // Place this file next to CreoExplorerHandler.dll (same folder).
 // Edit mappings, then re-run Register.ps1 when you ADD a new left-side name.
-// Changing only the Creo parameter on an existing left-side name: F5 / restart Explorer.
+// Changing only the Creo parameter on an existing left-side name: F5 is enough
+// (the DLL reloads this file when its mtime changes; restart Explorer if needed).
 //
 // Format (one mapping per line):
 //   "Windows property or header" "CREO_PARAMETER_NAME"
