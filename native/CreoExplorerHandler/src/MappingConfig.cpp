@@ -114,10 +114,11 @@ constexpr Alias kAliases[] = {
     {"Manufacturer", "System.Devices.Manufacturer"},
     {"Camera maker", "System.Photo.CameraManufacturer"},
     {"Camera Maker", "System.Photo.CameraManufacturer"},
-    // Explorer column "Classification" (Devices group, next to Manufacturer /
-    // Model / Paired). There is no System.Devices.Classification — the column
-    // is System.Devices.Category (singular device category).
-    {"Classification", "System.Devices.Category"},
+    // Explorer column "Classification" (Devices group, next to Manufacturer).
+    // MapColumnToSCID column 147 => System.Devices.PrimaryCategory
+    // ({D08DD4C0-3A9E-462E-8290-7B636B2576B9}, 10). Not Devices.Category,
+    // and System.Devices.Classification does not exist.
+    {"Classification", "System.Devices.PrimaryCategory"},
     {"Sensitivity", "System.SensitivityText"},
 
     // Mistaken short / wrong-group System.* names.
@@ -128,8 +129,9 @@ constexpr Alias kAliases[] = {
     {"System.Subtitle", "System.Media.SubTitle"},
     {"System.Media.Subtitle", "System.Media.SubTitle"},
     {"System.ProgramName", "System.ApplicationName"},
-    {"System.Classification", "System.Devices.Category"},
-    {"System.Devices.Classification", "System.Devices.Category"},
+    {"System.Classification", "System.Devices.PrimaryCategory"},
+    {"System.Devices.Classification", "System.Devices.PrimaryCategory"},
+    {"System.Devices.Category", "System.Devices.PrimaryCategory"},
     {"System.SensitivityText", "System.SensitivityText"},
     {"System.Manufacturer", "System.Devices.Manufacturer"},
     {"System.Photo.CameraManufacturer", "System.Photo.CameraManufacturer"},

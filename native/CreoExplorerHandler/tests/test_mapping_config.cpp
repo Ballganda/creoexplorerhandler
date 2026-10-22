@@ -64,11 +64,13 @@ bogus line
   auto mfg = mapping::resolve_canonical_name("Manufacturer");
   EXPECT_TRUE(mfg && *mfg == "System.Devices.Manufacturer");
   auto cls = mapping::resolve_canonical_name("Classification");
-  EXPECT_TRUE(cls && *cls == "System.Devices.Category");
+  EXPECT_TRUE(cls && *cls == "System.Devices.PrimaryCategory");
   auto cls_wrong = mapping::resolve_canonical_name("System.Devices.Classification");
-  EXPECT_TRUE(cls_wrong && *cls_wrong == "System.Devices.Category");
+  EXPECT_TRUE(cls_wrong && *cls_wrong == "System.Devices.PrimaryCategory");
   auto cls_short = mapping::resolve_canonical_name("System.Classification");
-  EXPECT_TRUE(cls_short && *cls_short == "System.Devices.Category");
+  EXPECT_TRUE(cls_short && *cls_short == "System.Devices.PrimaryCategory");
+  auto cls_cat = mapping::resolve_canonical_name("System.Devices.Category");
+  EXPECT_TRUE(cls_cat && *cls_cat == "System.Devices.PrimaryCategory");
   auto wrong_loc = mapping::resolve_canonical_name("System.Contact.OfficeLocation");
   EXPECT_TRUE(wrong_loc && *wrong_loc == "System.Contact.OfficeLocation");
   auto bad = mapping::resolve_canonical_name("NotARealHeader");

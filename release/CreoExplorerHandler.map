@@ -32,7 +32,7 @@
 "System.ApplicationName" "SYS_PROGRAM_NAME"
 "System.Project" "SYS_PROJECT"
 "System.Category" "SYS_CATEGORY"
-"System.Devices.Category" "SYS_CLASSIFICATION"
+"System.Devices.PrimaryCategory" "SYS_CLASSIFICATION"
 "System.Devices.Manufacturer" "SYS_MANUFACTURER"
 "System.Calendar.Location" "SYS_LOCATION"
 "System.Keywords" "SYS_TAGS"
@@ -41,8 +41,10 @@
 
 // Column header -> correct System.* name (common mistakes):
 //   Product version  -> System.Software.ProductVersion
-//   Classification   -> System.Devices.Category
+//   Classification   -> System.Devices.PrimaryCategory
+//     (confirmed via MapColumnToSCID on column 147)
 //     (NOT System.Devices.Classification — that name does not exist)
+//     (NOT System.Devices.Category — different Devices property)
 //     (NOT System.SensitivityText — that is the Sensitivity column)
 //     (NOT System.Category — that is the Categories column)
 //   Manufacturer     -> System.Devices.Manufacturer

@@ -320,17 +320,17 @@ HRESULT CreoPropertyStore::InitializeFromBytes(const std::uint8_t* data,
         }
         return s;
       }();
-      // Classification column ≈ Devices.Category (+ PrimaryCategory string).
-      // Do NOT dual-write SensitivityText — that fills the Sensitivity column.
-      if (lower == "system.devices.category" ||
+      // Classification column = System.Devices.PrimaryCategory (MapColumnToSCID).
+      // Also write Category* for older probes. Never SensitivityText.
+      if (lower == "system.devices.primarycategory" ||
+          lower == "system.devices.category" ||
           lower == "system.devices.classification" ||
           lower == "system.devices.categoryplural" ||
           lower == "system.devices.categorygroup" ||
-          lower == "system.devices.primarycategory" ||
           lower == "system.classification") {
+        cache_named("System.Devices.PrimaryCategory", value);
         cache_named("System.Devices.Category", value);
         cache_named("System.Devices.CategoryPlural", value);
-        cache_named("System.Devices.PrimaryCategory", value);
       } else if (lower == "system.devices.manufacturer" ||
                  lower == "system.photo.cameramanufacturer" ||
                  lower == "system.devices.devicemanufacturer") {

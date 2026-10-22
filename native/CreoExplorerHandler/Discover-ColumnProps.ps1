@@ -186,5 +186,8 @@ foreach ($pair in @(
 }
 
 Write-Host ""
-Write-Host "Tip: Classification is NOT System.Devices.Classification (invalid)."
-Write-Host "     Map SYS_CLASSIFICATION to System.Devices.Category (or PrimaryCategory)."
+Write-Host "Note: ExtendedProperty/GetDetailsOf often stay blank even when Explorer"
+Write-Host "      Details columns show values (Shell.Application cache). Trust"
+Write-Host "      MapColumnToSCID for the key, and Explorer Details for the value."
+Write-Host "Tip: Classification (col 147) => System.Devices.PrimaryCategory."
+Write-Host "     System.Devices.Classification is invalid and will never fill."

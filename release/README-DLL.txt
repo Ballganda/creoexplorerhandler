@@ -35,7 +35,7 @@ Map file format (see comments at the top of CreoExplorerHandler.map):
   "System.Document.RevisionNumber" "REV"
 
 Important column keys:
-  Classification  -> System.Devices.Category   (NOT System.Devices.Classification)
+  Classification  -> System.Devices.PrimaryCategory  (NOT Devices.Classification)
   Manufacturer    -> System.Devices.Manufacturer
   Location        -> System.Calendar.Location
   Product version -> System.Software.ProductVersion
