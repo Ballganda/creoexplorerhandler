@@ -25,8 +25,13 @@ if (-not (Test-IsAdmin)) {
     throw @"
 This script must run in an elevated PowerShell (Run as administrator).
 
-Right-click Start → Windows Terminal (Admin) or PowerShell (Admin), then:
+Developer PowerShell for Visual Studio is NOT elevated — open a separate Admin shell:
+
+  Start menu → right-click Windows PowerShell or Terminal → Run as administrator
+
+Then:
   cd `"$PSScriptRoot`"
+  Unblock-File .\Register.ps1, .\CreoExplorerHandler.dll, .\CreoExplorerHandler.map
   .\Register.ps1 -Action $Action
 "@
 }

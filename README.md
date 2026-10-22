@@ -12,10 +12,13 @@ From the [latest GitHub Release](https://github.com/Ballganda/creoexplorerhandle
 - `CreoExplorerHandler.map`
 - `Register.ps1`
 
-Put all three in one folder. Edit the `.map` if needed. In **Admin** PowerShell:
+Put all three in one folder. Edit the `.map` if needed.
+
+Use an elevated shell (**Run as administrator**). Developer PowerShell for Visual Studio is not elevated and will fail.
 
 ```powershell
 cd C:\path\to\that\folder
+Unblock-File .\Register.ps1, .\CreoExplorerHandler.dll, .\CreoExplorerHandler.map
 .\Register.ps1 -Action Register
 ```
 
