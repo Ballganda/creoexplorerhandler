@@ -75,42 +75,66 @@ bool HardcodedPropertyKey(const std::string& canonical, PROPERTYKEY* key) {
     return true;
   };
 
-  // PSFMTID_VERSION {0CEF7D53-FA64-11D1-A203-0000F81FEDEE}
-  PROPERTYKEY pk = {};
-  pk.fmtid.Data1 = 0x0cef7d53;
-  pk.fmtid.Data2 = 0xfa64;
-  pk.fmtid.Data3 = 0x11d1;
-  pk.fmtid.Data4[0] = 0xa2;
-  pk.fmtid.Data4[1] = 0x03;
-  pk.fmtid.Data4[2] = 0x00;
-  pk.fmtid.Data4[3] = 0x00;
-  pk.fmtid.Data4[4] = 0xf8;
-  pk.fmtid.Data4[5] = 0x1f;
-  pk.fmtid.Data4[6] = 0xed;
-  pk.fmtid.Data4[7] = 0xee;
+  auto fill = [&](PROPERTYKEY* out, DWORD data1, WORD data2, WORD data3,
+                  const unsigned char data4[8], DWORD pid) {
+    out->fmtid.Data1 = data1;
+    out->fmtid.Data2 = data2;
+    out->fmtid.Data3 = data3;
+    for (int i = 0; i < 8; ++i) {
+      out->fmtid.Data4[i] = data4[i];
+    }
+    out->pid = pid;
+  };
 
+  // PSFMTID_VERSION {0CEF7D53-FA64-11D1-A203-0000F81FEDEE}
+  static const unsigned char kVer4[8] = {0xa2, 0x03, 0x00, 0x00,
+                                         0xf8, 0x1f, 0xed, 0xee};
   if (eq(canonical, "System.Software.ProductVersion") ||
       eq(canonical, "System.ProductVersion")) {
-    // ExtendedProperty("System.Software.ProductVersion") / column "Product version"
-    pk.pid = 8;
-    *key = pk;
+    fill(key, 0x0cef7d53, 0xfa64, 0x11d1, kVer4, 8);
     return true;
   }
   if (eq(canonical, "System.FileVersion")) {
-    pk.pid = 4;
-    *key = pk;
+    fill(key, 0x0cef7d53, 0xfa64, 0x11d1, kVer4, 4);
     return true;
   }
   if (eq(canonical, "System.Software.ProductName")) {
-    pk.pid = 7;
-    *key = pk;
+    fill(key, 0x0cef7d53, 0xfa64, 0x11d1, kVer4, 7);
     return true;
   }
   if (eq(canonical, "System.FileDescription")) {
-    pk.pid = 3;
-    *key = pk;
+    fill(key, 0x0cef7d53, 0xfa64, 0x11d1, kVer4, 3);
     return true;
   }
+
+  // System.Calendar.Location — Explorer column "Location"
+  // {F6272D18-CECC-40B1-B26A-3911717AA7BD}, 100
+  static const unsigned char kCal4[8] = {0xb2, 0x6a, 0x39, 0x11,
+                                         0x71, 0x7a, 0xa7, 0xbd};
+  if (eq(canonical, "System.Calendar.Location")) {
+    fill(key, 0xf6272d18, 0xcecc, 0x40b1, kCal4, 100);
+    return true;
+  }
+
+  // System.Devices.Manufacturer — Explorer column "Manufacturer"
+  // {656A3BB3-ECC0-43FD-8477-4AE0404A96CD}, 8192
+  static const unsigned char kDevMfg4[8] = {0x84, 0x77, 0x4a, 0xe0,
+                                            0x40, 0x4a, 0x96, 0xcd};
+  if (eq(canonical, "System.Devices.Manufacturer") ||
+      eq(canonical, "System.Manufacturer")) {
+    fill(key, 0x656a3bb3, 0xecc0, 0x43fd, kDevMfg4, 8192);
+    return true;
+  }
+
+  // System.Photo.CameraManufacturer — Explorer column "Camera maker"
+  // {14B81DA1-0135-4D31-96D9-6CBFC9671A99}, 271
+  static const unsigned char kCam4[8] = {0x96, 0xd9, 0x6c, 0xbf,
+                                         0xc9, 0x67, 0x1a, 0x99};
+  if (eq(canonical, "System.Photo.CameraManufacturer")) {
+    fill(key, 0x14b81da1, 0x0135, 0x4d31, kCam4, 271);
+    return true;
+  }
+
   return false;
 }
 
@@ -223,6 +247,50 @@ HRESULT CreoPropertyStore::InitializeFromBytes(const std::uint8_t* data,
 
   if (creo::is_creo_ugc_file(data, size)) {
     const mapping::Config cfg = LoadMappingConfig();
+    auto cache_named = [&](const std::string& canonical_name,
+                           const std::string& value) {
+      PROPERTYKEY key = {};
+      if (FAILED(ResolvePropertyKey(canonical_name, &key))) {
+        return;
+      }
+      if (mapping::is_author_property(canonical_name)) {
+        CacheAuthor(value);
+      } else {
+        CacheString(key, value);
+      }
+    };
+
+    // Some Explorer column titles share near-duplicate System.* keys.
+    // Write the value to every plausible key so the visible column fills.
+    auto cache_with_aliases = [&](const std::string& canonical,
+                                  const std::string& value) {
+      cache_named(canonical, value);
+      const std::string lower = [&] {
+        std::string s = canonical;
+        for (char& c : s) {
+          c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        }
+        return s;
+      }();
+      if (lower == "system.devices.classification" ||
+          lower == "system.sensitivitytext" ||
+          lower == "system.sensitivity") {
+        cache_named("System.Devices.Classification", value);
+        cache_named("System.SensitivityText", value);
+      } else if (lower == "system.devices.manufacturer" ||
+                 lower == "system.photo.cameramanufacturer" ||
+                 lower == "system.devices.devicemanufacturer") {
+        cache_named("System.Devices.Manufacturer", value);
+        cache_named("System.Photo.CameraManufacturer", value);
+        cache_named("System.Devices.DeviceManufacturer", value);
+      } else if (lower == "system.calendar.location" ||
+                 lower == "system.contact.officelocation" ||
+                 lower == "system.supplemental.location") {
+        cache_named("System.Calendar.Location", value);
+        cache_named("System.Contact.OfficeLocation", value);
+      }
+    };
+
     for (const mapping::Entry& entry : cfg.entries) {
       const auto canonical = mapping::resolve_canonical_name(entry.explorer_name);
       if (!canonical) {
@@ -233,15 +301,7 @@ HRESULT CreoPropertyStore::InitializeFromBytes(const std::uint8_t* data,
       if (!value || value->empty()) {
         continue;
       }
-      PROPERTYKEY key = {};
-      if (FAILED(ResolvePropertyKey(*canonical, &key))) {
-        continue;
-      }
-      if (mapping::is_author_property(*canonical)) {
-        CacheAuthor(*value);
-      } else {
-        CacheString(key, *value);
-      }
+      cache_with_aliases(*canonical, *value);
     }
   }
 

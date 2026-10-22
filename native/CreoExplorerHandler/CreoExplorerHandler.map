@@ -32,22 +32,25 @@
 "System.ApplicationName" "SYS_PROGRAM_NAME"
 "System.Project" "SYS_PROJECT"
 "System.Category" "SYS_CATEGORY"
-"System.SensitivityText" "SYS_CLASSIFICATION"
-"System.Photo.CameraManufacturer" "SYS_MANUFACTURER"
-"System.Contact.OfficeLocation" "SYS_LOCATION"
+"System.Devices.Classification" "SYS_CLASSIFICATION"
+"System.Devices.Manufacturer" "SYS_MANUFACTURER"
+"System.Calendar.Location" "SYS_LOCATION"
 "System.Keywords" "SYS_TAGS"
 "System.Comment" "SYS_COMMENTS"
 "System.Subject" "SYS_SUBJECT"
 
-// Corrections for common mistaken names (also handled as aliases in the DLL):
-//   System.ProductVersion  -> System.Software.ProductVersion (Explorer column)
-//   System.Initials        -> System.Contact.Initials
-//   System.Subtitle        -> System.Media.SubTitle   (capital T in SubTitle)
-//   System.Department      -> System.Contact.Department
-//   System.ProgramName     -> System.ApplicationName
-//   System.Classification  -> System.SensitivityText
-//   System.Manufacturer    -> System.Photo.CameraManufacturer
-//   System.Location        -> System.Contact.OfficeLocation
+// Column header -> correct System.* name (common mistakes):
+//   Product version  -> System.Software.ProductVersion
+//   Classification   -> System.Devices.Classification
+//     (NOT System.SensitivityText — that is the Sensitivity column)
+//   Manufacturer     -> System.Devices.Manufacturer
+//     (NOT System.Photo.CameraManufacturer — that is Camera maker)
+//   Location         -> System.Calendar.Location
+//     (NOT System.Contact.OfficeLocation — that is Office location)
+//   Initials         -> System.Contact.Initials
+//   Subtitle         -> System.Media.SubTitle
+//   Department       -> System.Contact.Department
+//   Program name     -> System.ApplicationName
 //
-// Note: System.Document.RevisionNumber / System.Document.Version show in
-// Properties > Details but often have NO Explorer Details-view column.
+// Note: System.Document.RevisionNumber shows in Properties > Details but
+// often has no Explorer Details-view column; use Product version instead.

@@ -59,6 +59,14 @@ bogus line
   EXPECT_TRUE(product && *product == "System.Software.ProductVersion");
   auto product_col = mapping::resolve_canonical_name("Product version");
   EXPECT_TRUE(product_col && *product_col == "System.Software.ProductVersion");
+  auto loc = mapping::resolve_canonical_name("Location");
+  EXPECT_TRUE(loc && *loc == "System.Calendar.Location");
+  auto mfg = mapping::resolve_canonical_name("Manufacturer");
+  EXPECT_TRUE(mfg && *mfg == "System.Devices.Manufacturer");
+  auto cls = mapping::resolve_canonical_name("Classification");
+  EXPECT_TRUE(cls && *cls == "System.Devices.Classification");
+  auto wrong_loc = mapping::resolve_canonical_name("System.Contact.OfficeLocation");
+  EXPECT_TRUE(wrong_loc && *wrong_loc == "System.Contact.OfficeLocation");
   auto bad = mapping::resolve_canonical_name("NotARealHeader");
   EXPECT_TRUE(!bad);
   EXPECT_TRUE(mapping::is_author_property("System.Author"));

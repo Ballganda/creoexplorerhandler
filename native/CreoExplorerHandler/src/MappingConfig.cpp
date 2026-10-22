@@ -104,24 +104,32 @@ constexpr Alias kAliases[] = {
     {"Content Type", "System.ContentType"},
     {"Initials", "System.Contact.Initials"},
     {"Department", "System.Contact.Department"},
-    {"Location", "System.Contact.OfficeLocation"},
+    // Explorer column "Location" (not "Office location").
+    {"Location", "System.Calendar.Location"},
     {"Office location", "System.Contact.OfficeLocation"},
     {"Office Location", "System.Contact.OfficeLocation"},
     {"Subtitle", "System.Media.SubTitle"},
     {"SubTitle", "System.Media.SubTitle"},
-    {"Manufacturer", "System.Photo.CameraManufacturer"},
-    {"Classification", "System.SensitivityText"},
+    // Explorer column "Manufacturer" (not "Camera maker").
+    {"Manufacturer", "System.Devices.Manufacturer"},
+    {"Camera maker", "System.Photo.CameraManufacturer"},
+    {"Camera Maker", "System.Photo.CameraManufacturer"},
+    // Explorer column "Classification" (Devices group, next to Manufacturer).
+    {"Classification", "System.Devices.Classification"},
     {"Sensitivity", "System.SensitivityText"},
 
-    // Mistaken short System.* names (not in the Windows schema).
+    // Mistaken short / wrong-group System.* names.
     {"System.Initials", "System.Contact.Initials"},
     {"System.Department", "System.Contact.Department"},
-    {"System.Location", "System.Contact.OfficeLocation"},
+    {"System.Location", "System.Calendar.Location"},
+    {"System.Contact.OfficeLocation", "System.Contact.OfficeLocation"},
     {"System.Subtitle", "System.Media.SubTitle"},
     {"System.Media.Subtitle", "System.Media.SubTitle"},
     {"System.ProgramName", "System.ApplicationName"},
-    {"System.Classification", "System.SensitivityText"},
-    {"System.Manufacturer", "System.Photo.CameraManufacturer"},
+    {"System.Classification", "System.Devices.Classification"},
+    {"System.SensitivityText", "System.SensitivityText"},
+    {"System.Manufacturer", "System.Devices.Manufacturer"},
+    {"System.Photo.CameraManufacturer", "System.Photo.CameraManufacturer"},
     // Explorer Details column "Product version" is System.Software.ProductVersion
     // (VERSIONINFO FMTID, PID 8) — not System.ProductVersion.
     {"System.ProductVersion", "System.Software.ProductVersion"},
