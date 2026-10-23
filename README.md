@@ -6,6 +6,16 @@ No Creo Toolkit. No GRANITE. The handler scans the Creo PSB file for string USER
 
 > **Disclaimer — use at your own risk.** This is an AI-generated code project. It has not been reviewed in any way. You assume all risk from downloading, installing, or using this software.
 
+## What it looks like
+
+Explorer hover info tip with Creo properties (Classification, Manufacturer, Location, and more):
+
+![Explorer hover info tip showing Creo properties](docs/images/explorer-infotip.jpg)
+
+Explorer Details columns populated from Creo parameters, alongside the Creo Parameters dialog, Windows Properties Details tab, and the `CreoExplorerHandler.map` mapping file:
+
+![Explorer columns, Creo parameters, Properties, and map file](docs/images/explorer-columns-and-map.jpg)
+
 ## Quick install (prebuilt)
 
 From the [latest GitHub Release](https://github.com/Ballganda/creoexplorerhandler/releases), download:
